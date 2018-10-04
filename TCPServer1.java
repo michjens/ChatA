@@ -59,14 +59,15 @@ public class TCPServer1 {
     }
 
     public static boolean validateUsername(String username, Socket socket) {
-
         String check = "^[a-zA-Z0-9\\-_]{1,12}$";
 
         if (!username.matches(check)) {
             //Send msg to client that username is invalid and connection hs been terminated
             try {
                 OutputStream output = socket.getOutputStream();
+                System.out.println("1");
                 sendToClient(output, "JR_ER 500: Invalid Username. Connection terminated.");
+                System.out.println("JR_ER 500: Invalid Username: " + username + ". Connection terminated.");
                 socket.close();
             } catch (IOException e) {
                 e.printStackTrace();
