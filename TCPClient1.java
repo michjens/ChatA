@@ -1,4 +1,4 @@
-package ChatAssignment;
+package ChatA;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -14,10 +14,9 @@ public class TCPClient1 {
     public static void main(String[] args) throws Exception {
         System.out.println("=============CLIENT==============");
         Scanner sc = new Scanner(System.in);
-        String msgToSend = "";
 
 
-        System.out.println("Type your username: ");
+        System.out.print("Type your username: ");
         String username = sc.nextLine();
 
 
@@ -65,11 +64,15 @@ public class TCPClient1 {
 
             }*/
             while (socket.isConnected()) {
-
+                Scanner send = new Scanner(System.in);
                 System.out.println("What do you want to send? ");
-                msgToSend = sc.nextLine();
+                String msgToSend = send.nextLine();
+                msgToSend = msgToSend.trim();
+                // System.out.println("1");
                 byte[] dataToSend = msgToSend.getBytes();
+                // System.out.println("2");
                 output.write(dataToSend);
+                // System.out.println("3");
 
                 byte[] dataIn = new byte[1024];
                 input.read(dataIn);

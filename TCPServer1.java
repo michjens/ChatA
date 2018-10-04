@@ -1,4 +1,4 @@
-package ChatAssignment;
+package ChatA;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -27,9 +27,9 @@ public class TCPServer1 {
             System.out.println("IP: " + clientIp);
             System.out.println("PORT: " + socket.getPort());
 
-            byte[] dataIn = new byte[1024];
-            input.read(dataIn);
-            String joinMsg = new String(dataIn);
+            byte[] dataUn = new byte[1024];
+            input.read(dataUn);
+            String joinMsg = new String(dataUn);
             joinMsg = joinMsg.trim();
             System.out.println(joinMsg);
 
@@ -39,17 +39,18 @@ public class TCPServer1 {
             validateUsername(username, socket);
 
 
-            System.out.println("USERNAME: " + username);
+            System.out.println("USERNAME: " + username + "\nJR_OK\n\n");
 
 
-            while (test) {
+            while (socket.isConnected()) {
+                byte[] dataIn = new byte[1024];
                 input.read(dataIn);
                 String msgIn = new String(dataIn);
                 msgIn = msgIn.trim();
 
-                System.out.println("IN -->" + msgIn + "<--");
+                System.out.println("IN FROM:" + username + "-->" + msgIn + "<--");
 
-                String msgToSend = "SERVER: [sender:" + clientIp + " ]: " + msgIn;
+                String msgToSend = "SERVER: [sender:" + clientIp + "]: " + msgIn;
                 sendToClient(output, msgToSend);
             }
         } catch (IOException e) {
@@ -62,16 +63,14 @@ public class TCPServer1 {
         String check = "^[a-zA-Z0-9\\-_]{1,12}$";
 
         if (!username.matches(check)) {
-            //Send msg to client that username is shit and connection hs been terminated
+            //Send msg to client that username is invalid and connection hs been terminated
             try {
                 OutputStream output = socket.getOutputStream();
-                sendToClient(output, "Invalid Username. Connection terminated.");
+                sendToClient(output, "JR_ER 500: Invalid Username. Connection terminated.");
                 socket.close();
             } catch (IOException e) {
                 e.printStackTrace();
             }
-
-
             return false;
         } else {
             return true;
