@@ -11,13 +11,17 @@ import java.util.Scanner;
 import java.util.regex.Matcher;
 
 public class TCPClient1 {
-    public static void main(String[] args) throws Exception {
+    public static void main(String[] args) throws IOException {
         System.out.println("=============CLIENT==============");
         Scanner sc = new Scanner(System.in);
 
 
-        System.out.print("Type your username: ");
-        String username = sc.nextLine();
+        Thread heartBeater = null;
+        Thread receiver = null;
+
+
+        System.out.print("Type JOIN + your username: ");
+        String message = sc.nextLine();
 
 
         System.out.print("What is the IP for the server (type 0 for localhost): ");
@@ -32,58 +36,97 @@ public class TCPClient1 {
 
         final int PORT_SERVER = portToConnect;
         final String IP_SERVER_STR = ipToConnect.equals("0") ? "127.0.0.1" : ipToConnect;
+        InetAddress ip = InetAddress.getByName(IP_SERVER_STR);
+        Socket socket = new Socket(ip, PORT_SERVER);
+        InputStream input = socket.getInputStream();
+        OutputStream output = socket.getOutputStream();
 
-        try {
-            InetAddress ip = InetAddress.getByName(IP_SERVER_STR);
 
-            System.out.println("\nConnecting...");
-            System.out.println("USERNAME: " + username);
-            System.out.println("SERVER IP: " + IP_SERVER_STR);
-            System.out.println("SERVER PORT: " + PORT_SERVER + "\n");
+        System.out.println("\nConnecting...");
+        System.out.println("USERNAME: " + message);
+        System.out.println("SERVER IP: " + IP_SERVER_STR);
+        System.out.println("SERVER PORT: " + PORT_SERVER + "\n");
 
-            Socket socket = new Socket(ip, PORT_SERVER);
 
-            InputStream input = socket.getInputStream();
-            OutputStream output = socket.getOutputStream();
 
+            //connect
+
+        if (message.contains("JOIN")) {
             try {
-                String joinMsg = "JOIN " + username + ", " + IP_SERVER_STR + ":" + portToConnect;
-                byte[] dataToSend = joinMsg.getBytes();
-                output.write(dataToSend);
+            System.out.println("Connected");
+
+            String joinMsg = message + ", " + IP_SERVER_STR + ":" + portToConnect;
+            byte[] dataToSend = joinMsg.getBytes();
+            output.write(dataToSend);
+
+
+
+            if (socket.isConnected()) {
+                receiver = new Thread(() -> {
+                    try {
+                        while (socket.isConnected()) {
+
+                            Scanner send = new Scanner(System.in);
+                            System.out.println("What do you want to send? ");
+                            String msgToSend = send.nextLine();
+                            msgToSend = msgToSend.trim();
+                            sendToServer(output, msgToSend);
+
+                            byte[] dataIn = new byte[1024];
+                            input.read(dataIn);
+                            String msgIn = new String(dataIn);
+                            msgIn = msgIn.trim();
+
+                            System.out.println("IN -->" + msgIn + "<--");
+                        }
+                    } catch (IOException e) {
+                     e.printStackTrace();
+                    }
+                });
+                receiver.start();
+
+                heartBeater = new Thread(() -> {
+                    try {
+
+                        String heartbeat = "IMAV";
+
+                        while (true) {
+                            Thread.sleep(60000);
+                            sendToServer(output, heartbeat);
+                            //System.out.println(heartbeat);
+                        }
+
+                    } catch (InterruptedException e) {
+                        //e.printStackTrace();
+                    }
+                });
+                heartBeater.start();
+
+            } else {
+                System.out.println("Username is malformed:\n Please enter new username with with letters, digits, underscore or hyphen.\n Must not be longer than 12 characters.");
+            }
             } catch (IOException e) {
+                e.printStackTrace();
+        }
 
-            }
-           /* do {
-
-                sendToServer(output, msgToSend);
-                byte[] dataIn = new byte[1024];
-                input.read(dataIn);
-                String msgIn = new String(dataIn);
-                msgIn = msgIn.trim();
+        } else {
+            OutputStream outputStream = socket.getOutputStream();
+            sendToServer(outputStream, message);
+        }
 
 
-            }*/
-            while (socket.isConnected()) {
-                Scanner send = new Scanner(System.in);
-                System.out.println("What do you want to send? ");
-                String msgToSend = send.nextLine();
-                msgToSend = msgToSend.trim();
-                // System.out.println("1");
-                byte[] dataToSend = msgToSend.getBytes();
-                // System.out.println("2");
-                output.write(dataToSend);
-                // System.out.println("3");
+    }
 
-                byte[] dataIn = new byte[1024];
-                input.read(dataIn);
-                String msgIn = new String(dataIn);
-                msgIn = msgIn.trim();
+    //heartBeater.join();
 
-                System.out.println("IN -->" + msgIn + "<--");
-            }
 
-        } catch (UnknownHostException e) {
-            e.printStackTrace();
+    //Heartbeats
+
+
+    public static void sendToServer(OutputStream output, String message) {
+        try {
+            byte[] dataToSend = message.getBytes();
+            output.write(dataToSend);
         } catch (IOException e) {
             e.printStackTrace();
         }

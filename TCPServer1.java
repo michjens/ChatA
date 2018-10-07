@@ -5,53 +5,110 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.Scanner;
 
 public class TCPServer1 {
     public static void main(String[] args) {
         System.out.println("=============SERVER==============");
-        boolean test = true;
         final int PORT_LISTEN = 5656;
+        final ArrayList<Client> clients = new ArrayList<>();
 
         try {
             ServerSocket server = new ServerSocket(PORT_LISTEN);
 
             System.out.println("Server starting...\n");
 
-            Socket socket = server.accept();
+            while (true) {
+                Socket socket = server.accept();
 
-            String clientIp = socket.getInetAddress().getHostAddress();
-            InputStream input = socket.getInputStream();
-            OutputStream output = socket.getOutputStream();
-            System.out.println("Client connected");
-            System.out.println("IP: " + clientIp);
-            System.out.println("PORT: " + socket.getPort());
-
-            byte[] dataUn = new byte[1024];
-            input.read(dataUn);
-            String joinMsg = new String(dataUn);
-            joinMsg = joinMsg.trim();
-            System.out.println(joinMsg);
-
-            int indexOfComma = joinMsg.lastIndexOf(",");
-            String username = joinMsg.substring(5, indexOfComma);
-
-            validateUsername(username, socket);
+                String clientIp = socket.getInetAddress().getHostAddress();
+                InputStream input = socket.getInputStream();
+                OutputStream output = socket.getOutputStream();
+                System.out.println("Client connected");
+                System.out.println("IP: " + clientIp);
+                System.out.println("PORT: " + socket.getPort());
 
 
-            System.out.println("USERNAME: " + username + "\nJR_OK\n\n");
+                byte[] dataUn = new byte[1024];
+                input.read(dataUn);
+                String joinMsg = new String(dataUn);
+                joinMsg = joinMsg.trim();
+                System.out.println(joinMsg);
+
+                if (joinMsg.contains("JOIN")) {
+                    Client client = new Client();
+
+                    int indexOfComma = joinMsg.lastIndexOf(",");
+                    String username = joinMsg.substring(5, indexOfComma);
+
+                    validateUsername(username, socket);
+
+                    client.setIp(socket.getInetAddress().getHostAddress());
+                    client.setUsername(username);
+                    client.setSocket(socket);
+                    client.setInput(socket.getInputStream());
+                    client.setOutput(socket.getOutputStream());
+                    clients.add(client);
+                    server.accept();
 
 
-            while (socket.isConnected()) {
-                byte[] dataIn = new byte[1024];
-                input.read(dataIn);
-                String msgIn = new String(dataIn);
-                msgIn = msgIn.trim();
+                    System.out.println("USERNAME: " + username + "\nJR_OK\n\n");
+                    while (true) {
+                        ArrayList<Thread> receiverList = new ArrayList<>();
+                        Thread receiver = new Thread(() -> {
+                            while (true) {
+                                try {
+                                    InputStream inputStream = client.getInput();
+                                    byte[] dataIn = new byte[1024];
+                                    inputStream.read(dataIn);
+                                    String msgIn = new String(dataIn);
+                                    msgIn = msgIn.trim();
 
-                System.out.println("IN FROM:" + username + "-->" + msgIn + "<--");
+                                    //   System.out.println("IN FROM:" + username + "-->" + msgIn + "<--");
 
-                String msgToSend = "SERVER: [sender:" + clientIp + "]: " + msgIn;
-                sendToClient(output, msgToSend);
+                                /*String msgToSend = "SERVER: [sender:" + clientIp + "]: " + msgIn;
+                                sendToClient(output, msgToSend);*/
+                                    if (msgIn.equalsIgnoreCase("QUIT")) {
+                                        socket.close();
+                                        break;
+                                    } else if (msgIn.equals("IMAV")) {
+                                        client.setSecondsSinceLastHeartbeat(0);
+                                    } else {
+                                        String msgToClients = client.getUsername() + ": " + msgIn;
+                                        System.out.println(msgToClients);
+                                        for (Client c : clients) {
+                                            sendToClient(c.getOutput(), msgToClients);
+                                        }
+
+                                    }
+                                    if (client.getSecondsSinceLastHeartbeat() > 10) {
+                                        socket.close();
+                                        break;
+                                    }
+
+
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+
+                        });
+                        receiverList.add(receiver);
+
+                        for (Thread t : receiverList) {
+                            t.start();
+                        }
+                        for (Thread t : receiverList) {
+                            try {
+                                t.join();
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                        }
+
+                    }
+                }
             }
         } catch (IOException e) {
             e.printStackTrace();
