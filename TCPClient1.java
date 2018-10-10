@@ -11,13 +11,17 @@ import java.util.Scanner;
 import java.util.regex.Matcher;
 
 public class TCPClient1 {
+    static Thread IMAV;
+    static OutputStream output;
+
     public static void main(String[] args) throws IOException {
         System.out.println("=============CLIENT==============");
         Scanner sc = new Scanner(System.in);
 
 
-        Thread heartBeater = null;
+        //Thread heartBeater = null;
         Thread receiver = null;
+        Thread sender = null;
 
 
         System.out.print("Type JOIN + your username: ");
@@ -39,7 +43,7 @@ public class TCPClient1 {
         InetAddress ip = InetAddress.getByName(IP_SERVER_STR);
         Socket socket = new Socket(ip, PORT_SERVER);
         InputStream input = socket.getInputStream();
-        OutputStream output = socket.getOutputStream();
+        output = socket.getOutputStream();
 
 
         System.out.println("\nConnecting...");
@@ -47,67 +51,71 @@ public class TCPClient1 {
         System.out.println("SERVER IP: " + IP_SERVER_STR);
         System.out.println("SERVER PORT: " + PORT_SERVER + "\n");
 
-
-
-            //connect
+        heartBeater();
+        //connect
 
         if (message.contains("JOIN")) {
             try {
-            System.out.println("Connected");
-
-            String joinMsg = message + ", " + IP_SERVER_STR + ":" + portToConnect;
-            byte[] dataToSend = joinMsg.getBytes();
-            output.write(dataToSend);
 
 
+                System.out.println("Connected");
 
-            if (socket.isConnected()) {
-                receiver = new Thread(() -> {
-                    try {
-                        while (socket.isConnected()) {
+                String joinMsg = message + ", " + IP_SERVER_STR + ":" + portToConnect;
+                byte[] dataToSend = joinMsg.getBytes();
+                output.write(dataToSend);
 
-                            Scanner send = new Scanner(System.in);
-                            System.out.println("What do you want to send? ");
-                            String msgToSend = send.nextLine();
-                            msgToSend = msgToSend.trim();
-                            sendToServer(output, msgToSend);
 
-                            byte[] dataIn = new byte[1024];
-                            input.read(dataIn);
-                            String msgIn = new String(dataIn);
-                            msgIn = msgIn.trim();
-
-                            System.out.println("IN -->" + msgIn + "<--");
-                        }
-                    } catch (IOException e) {
-                     e.printStackTrace();
-                    }
-                });
-                receiver.start();
-
-                heartBeater = new Thread(() -> {
-                    try {
-
-                        String heartbeat = "IMAV";
-
-                        while (true) {
-                            Thread.sleep(60000);
-                            sendToServer(output, heartbeat);
-                            //System.out.println(heartbeat);
+                if (socket.isConnected()) {
+                    sender = new Thread(() -> {
+                        while(true) {
+                            do {
+                                Scanner send = new Scanner(System.in);
+                                String msgToSend = send.nextLine();
+                                msgToSend = msgToSend.trim();
+                                if (msgToSend.trim().length() < 250) {
+                                    sendToServer(output, msgToSend);
+                                    break;
+                                }
+                            }
+                            while (socket.isConnected());
                         }
 
-                    } catch (InterruptedException e) {
-                        //e.printStackTrace();
-                    }
-                });
-                heartBeater.start();
 
-            } else {
-                System.out.println("Username is malformed:\n Please enter new username with with letters, digits, underscore or hyphen.\n Must not be longer than 12 characters.");
-            }
+
+
+
+
+
+                    });
+                    sender.start();
+
+
+
+
+                    receiver = new Thread(() -> {
+                        try {
+                            while (true) {
+                                byte[] dataIn = new byte[1024];
+
+                                input.read(dataIn);
+
+                                String msgIn = new String(dataIn);
+                                msgIn = msgIn.trim();
+                                System.out.println(msgIn);
+                            }
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+
+                    });
+                    receiver.start();
+
+                } else {
+                    System.out.println("Username is malformed:\n Please enter new username with with letters, digits, underscore or hyphen.\n Must not be longer than 12 characters.");
+                }
             } catch (IOException e) {
                 e.printStackTrace();
-        }
+            }
 
         } else {
             OutputStream outputStream = socket.getOutputStream();
@@ -123,43 +131,36 @@ public class TCPClient1 {
     //Heartbeats
 
 
-    public static void sendToServer(OutputStream output, String message) {
+    public static void sendToServer(OutputStream output, String msgToSend) {
         try {
-            byte[] dataToSend = message.getBytes();
+            byte[] dataToSend = msgToSend.getBytes();
             output.write(dataToSend);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
+    public static void heartBeater(){
+        IMAV = new Thread(() -> {
+            try {
+
+                while (true) {
+                    Thread.sleep(60000);
+                    String heartbeat = "IMAV";
+                    sendToServer(output, heartbeat);
+                    System.out.println(heartbeat);
+                }
+
+            } catch (InterruptedException e) {
+                //e.printStackTrace();
+            }
+        });
+        IMAV.start();
+    }
 
     /*  public static void sendToServer(OutputStream output, String msgToSend) throws Exception{
-
-
      */
 
 
 }
-
-
-
-
-
-   /* public static String validateUsername(String username){
-        Scanner uName = new Scanner(System.in);
-        System.out.println("Type your username");
-        username = uName.next();
-        String check = "^[a-zA-Z0-9\\-_]{1,12}$";
-
-        if (!username.matches(check)){
-            System.out.println("Invalid characters. Try again");
-            username = "";
-            validateUsername(username);
-
-        }
-        System.out.println("Your username is: " + username);
-        return username;
-
-
-        } */
 
 

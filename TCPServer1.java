@@ -12,7 +12,7 @@ public class TCPServer1 {
     public static void main(String[] args) {
         System.out.println("=============SERVER==============");
         final int PORT_LISTEN = 5656;
-        final ArrayList<Client> clients = new ArrayList<>();
+        ArrayList<Client> clients = new ArrayList<>();
 
         try {
             ServerSocket server = new ServerSocket(PORT_LISTEN);
@@ -20,7 +20,9 @@ public class TCPServer1 {
             System.out.println("Server starting...\n");
 
             while (true) {
+
                 Socket socket = server.accept();
+
 
                 String clientIp = socket.getInetAddress().getHostAddress();
                 InputStream input = socket.getInputStream();
@@ -37,10 +39,23 @@ public class TCPServer1 {
                 System.out.println(joinMsg);
 
                 if (joinMsg.contains("JOIN")) {
-                    Client client = new Client();
 
                     int indexOfComma = joinMsg.lastIndexOf(",");
                     String username = joinMsg.substring(5, indexOfComma);
+                    Client client = new Client();
+
+
+
+                    // Hvis username er lig med et allerede eksisterende username
+                    // slet bruger
+                    for(Client c : clients){
+                        if(c.getUsername().equalsIgnoreCase(username)){
+                            String errorMessage = "JR_ER\n";
+                            sendToClient(output, errorMessage);
+                        }else{
+                            sendToClient(output, "JR_OK\n");
+                        }
+                    }
 
                     validateUsername(username, socket);
 
@@ -50,64 +65,68 @@ public class TCPServer1 {
                     client.setInput(socket.getInputStream());
                     client.setOutput(socket.getOutputStream());
                     clients.add(client);
-                    server.accept();
+                    String allClientsString = "All connected clients: ";
+                    for(Client c : clients){
+                        allClientsString +=  c.getUsername() + ", ";
+                    }
+                    for(Client c : clients){
+                        sendToClient(c.getOutput(), allClientsString);
+                    }
 
 
-                    System.out.println("USERNAME: " + username + "\nJR_OK\n\n");
-                    while (true) {
-                        ArrayList<Thread> receiverList = new ArrayList<>();
-                        Thread receiver = new Thread(() -> {
-                            while (true) {
-                                try {
-                                    InputStream inputStream = client.getInput();
-                                    byte[] dataIn = new byte[1024];
-                                    inputStream.read(dataIn);
-                                    String msgIn = new String(dataIn);
-                                    msgIn = msgIn.trim();
 
-                                    //   System.out.println("IN FROM:" + username + "-->" + msgIn + "<--");
+
+                    ArrayList<Thread> receiverList = new ArrayList<>();
+                    Thread receiver = new Thread(() -> {
+                        while (true) {
+                            try {
+                                InputStream inputStream = client.getInput();
+                                byte[] dataIn = new byte[1024];
+                                inputStream.read(dataIn);
+                                String msgIn = new String(dataIn);
+                                msgIn = msgIn.trim();
+
+                                //   System.out.println("IN FROM:" + username + "-->" + msgIn + "<--");
 
                                 /*String msgToSend = "SERVER: [sender:" + clientIp + "]: " + msgIn;
                                 sendToClient(output, msgToSend);*/
-                                    if (msgIn.equalsIgnoreCase("QUIT")) {
-                                        socket.close();
-                                        break;
-                                    } else if (msgIn.equals("IMAV")) {
-                                        client.setSecondsSinceLastHeartbeat(0);
-                                    } else {
-                                        String msgToClients = client.getUsername() + ": " + msgIn;
-                                        System.out.println(msgToClients);
-                                        for (Client c : clients) {
-                                            sendToClient(c.getOutput(), msgToClients);
-                                        }
+                                if (msgIn.equalsIgnoreCase("QUIT")) {
+                                    socket.close();
+                                    break;
+                                } else if (msgIn.equalsIgnoreCase("IMAV")) {
+                                    client.setSecondsSinceLastHeartbeat(0);
+                                    System.out.println("IMAV");
 
+                                }else if(msgIn.trim().length() > 250){
+                                    String JR_ER_toolong = "JR_ER Message too long" + msgIn.trim().length();
+                                    sendToClient(output, JR_ER_toolong);
+                                }else {
+                                    String msgToClients = client.getUsername() + ": " + msgIn;
+                                    System.out.println(msgToClients);
+                                    for (Client c : clients) {
+                                        sendToClient(c.getOutput(), msgToClients);
                                     }
-                                    if (client.getSecondsSinceLastHeartbeat() > 10) {
-                                        socket.close();
-                                        break;
-                                    }
 
-
-                                } catch (IOException e) {
-                                    e.printStackTrace();
                                 }
-                            }
+                                if (client.getSecondsSinceLastHeartbeat() > 10) {
+                                    socket.close();
+                                    break;
+                                }
 
-                        });
-                        receiverList.add(receiver);
 
-                        for (Thread t : receiverList) {
-                            t.start();
-                        }
-                        for (Thread t : receiverList) {
-                            try {
-                                t.join();
-                            } catch (InterruptedException e) {
+                            } catch (IOException e) {
                                 e.printStackTrace();
                             }
                         }
 
+                    });
+                    receiverList.add(receiver);
+
+                    for (Thread t : receiverList) {
+                        t.start();
                     }
+
+
                 }
             }
         } catch (IOException e) {
