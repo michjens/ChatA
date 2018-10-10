@@ -36,12 +36,12 @@ public class TCPServer1 {
                 input.read(dataUn);
                 String joinMsg = new String(dataUn);
                 joinMsg = joinMsg.trim();
-                System.out.println(joinMsg);
+                System.out.println(joinMsg.substring(4));
 
                 if (joinMsg.contains("JOIN")) {
 
                     int indexOfComma = joinMsg.lastIndexOf(",");
-                    String username = joinMsg.substring(5, indexOfComma);
+                    String username = joinMsg.substring(4, indexOfComma);
                     Client client = new Client();
 
 
@@ -70,7 +70,7 @@ public class TCPServer1 {
                         allClientsString +=  c.getUsername() + ", ";
                     }
                     for(Client c : clients){
-                        sendToClient(c.getOutput(), allClientsString);
+                        sendToClient(c.getOutput(), allClientsString.substring(0,allClientsString.length()-2));
                     }
 
 
@@ -91,7 +91,9 @@ public class TCPServer1 {
                                 /*String msgToSend = "SERVER: [sender:" + clientIp + "]: " + msgIn;
                                 sendToClient(output, msgToSend);*/
                                 if (msgIn.equalsIgnoreCase("QUIT")) {
-                                    socket.close();
+                                    sendToClient(output, "JR_Quit. Terminating connection");
+                                    client.getSocket().close();
+                                    clients.remove(client);
                                     break;
                                 } else if (msgIn.equalsIgnoreCase("IMAV")) {
                                     client.setSecondsSinceLastHeartbeat(0);

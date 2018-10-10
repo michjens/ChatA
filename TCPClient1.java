@@ -24,8 +24,8 @@ public class TCPClient1 {
         Thread sender = null;
 
 
-        System.out.print("Type JOIN + your username: ");
-        String message = sc.nextLine();
+        System.out.print("Type your username: ");
+        String message = "JOIN" + sc.nextLine();
 
 
         System.out.print("What is the IP for the server (type 0 for localhost): ");
@@ -45,9 +45,9 @@ public class TCPClient1 {
         InputStream input = socket.getInputStream();
         output = socket.getOutputStream();
 
-
+        String username = message.substring(4);
         System.out.println("\nConnecting...");
-        System.out.println("USERNAME: " + message);
+        System.out.println("USERNAME: " + username);
         System.out.println("SERVER IP: " + IP_SERVER_STR);
         System.out.println("SERVER PORT: " + PORT_SERVER + "\n");
 
@@ -58,12 +58,17 @@ public class TCPClient1 {
             try {
 
 
-                System.out.println("Connected");
 
-                String joinMsg = message + ", " + IP_SERVER_STR + ":" + portToConnect;
+
+                String joinMsg = "JOIN" + username + ", " + IP_SERVER_STR + ":" + portToConnect;
                 byte[] dataToSend = joinMsg.getBytes();
                 output.write(dataToSend);
-
+                if(!username.matches("^[a-zA-Z0-9\\-_]{1,12}$")){
+                    System.out.println("JR_ER 500: Invalid Username. Connection terminated.");
+                    socket.close();
+                }else{
+                    System.out.println("Connected");
+                }
 
                 if (socket.isConnected()) {
                     sender = new Thread(() -> {
@@ -102,7 +107,12 @@ public class TCPClient1 {
                                 String msgIn = new String(dataIn);
                                 msgIn = msgIn.trim();
                                 System.out.println(msgIn);
+                                if(msgIn.contains("JR_Quit")){
+                                    socket.close();
+                                    IMAV.stop();
+                                }
                             }
+
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
