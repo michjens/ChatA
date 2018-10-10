@@ -19,7 +19,6 @@ public class TCPClient1 {
         Scanner sc = new Scanner(System.in);
 
 
-        //Thread heartBeater = null;
         Thread receiver = null;
         Thread sender = null;
 
@@ -33,9 +32,6 @@ public class TCPClient1 {
 
         System.out.print("What is the PORT for the server: ");
         int portToConnect = args.length >= 2 ? Integer.parseInt(args[1]) : sc.nextInt();
-
-
-        // username = validateUsername(username);
 
 
         final int PORT_SERVER = portToConnect;
@@ -58,21 +54,19 @@ public class TCPClient1 {
             try {
 
 
-
-
                 String joinMsg = "JOIN" + username + ", " + IP_SERVER_STR + ":" + portToConnect;
                 byte[] dataToSend = joinMsg.getBytes();
                 output.write(dataToSend);
-                if(!username.matches("^[a-zA-Z0-9\\-_]{1,12}$")){
+                if (!username.matches("^[a-zA-Z0-9\\-_]{1,12}$")) {
                     System.out.println("JR_ER 500: Invalid Username. Connection terminated.");
                     socket.close();
-                }else{
+                } else {
                     System.out.println("Connected");
                 }
 
                 if (socket.isConnected()) {
                     sender = new Thread(() -> {
-                        while(true) {
+                        while (true) {
                             do {
                                 Scanner send = new Scanner(System.in);
                                 String msgToSend = send.nextLine();
@@ -86,15 +80,8 @@ public class TCPClient1 {
                         }
 
 
-
-
-
-
-
                     });
                     sender.start();
-
-
 
 
                     receiver = new Thread(() -> {
@@ -107,7 +94,7 @@ public class TCPClient1 {
                                 String msgIn = new String(dataIn);
                                 msgIn = msgIn.trim();
                                 System.out.println(msgIn);
-                                if(msgIn.contains("JR_Quit")){
+                                if (msgIn.contains("JR_Quit")) {
                                     socket.close();
                                     IMAV.stop();
                                 }
@@ -149,7 +136,8 @@ public class TCPClient1 {
             e.printStackTrace();
         }
     }
-    public static void heartBeater(){
+
+    public static void heartBeater() {
         IMAV = new Thread(() -> {
             try {
 
@@ -161,14 +149,11 @@ public class TCPClient1 {
                 }
 
             } catch (InterruptedException e) {
-                //e.printStackTrace();
+
             }
         });
         IMAV.start();
     }
-
-    /*  public static void sendToServer(OutputStream output, String msgToSend) throws Exception{
-     */
 
 
 }

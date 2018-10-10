@@ -45,14 +45,13 @@ public class TCPServer1 {
                     Client client = new Client();
 
 
-
                     // Hvis username er lig med et allerede eksisterende username
                     // slet bruger
-                    for(Client c : clients){
-                        if(c.getUsername().equalsIgnoreCase(username)){
+                    for (Client c : clients) {
+                        if (c.getUsername().equalsIgnoreCase(username)) {
                             String errorMessage = "JR_ER\n";
                             sendToClient(output, errorMessage);
-                        }else{
+                        } else {
                             sendToClient(output, "JR_OK\n");
                         }
                     }
@@ -66,14 +65,12 @@ public class TCPServer1 {
                     client.setOutput(socket.getOutputStream());
                     clients.add(client);
                     String allClientsString = "All connected clients: ";
-                    for(Client c : clients){
-                        allClientsString +=  c.getUsername() + ", ";
+                    for (Client c : clients) {
+                        allClientsString += c.getUsername() + ", ";
                     }
-                    for(Client c : clients){
-                        sendToClient(c.getOutput(), allClientsString.substring(0,allClientsString.length()-2));
+                    for (Client c : clients) {
+                        sendToClient(c.getOutput(), allClientsString.substring(0, allClientsString.length() - 2));
                     }
-
-
 
 
                     ArrayList<Thread> receiverList = new ArrayList<>();
@@ -86,10 +83,7 @@ public class TCPServer1 {
                                 String msgIn = new String(dataIn);
                                 msgIn = msgIn.trim();
 
-                                //   System.out.println("IN FROM:" + username + "-->" + msgIn + "<--");
 
-                                /*String msgToSend = "SERVER: [sender:" + clientIp + "]: " + msgIn;
-                                sendToClient(output, msgToSend);*/
                                 if (msgIn.equalsIgnoreCase("QUIT")) {
                                     sendToClient(output, "JR_Quit. Terminating connection");
                                     client.getSocket().close();
@@ -99,10 +93,10 @@ public class TCPServer1 {
                                     client.setSecondsSinceLastHeartbeat(0);
                                     System.out.println("IMAV");
 
-                                }else if(msgIn.trim().length() > 250){
+                                } else if (msgIn.trim().length() > 250) {
                                     String JR_ER_toolong = "JR_ER Message too long" + msgIn.trim().length();
                                     sendToClient(output, JR_ER_toolong);
-                                }else {
+                                } else {
                                     String msgToClients = client.getUsername() + ": " + msgIn;
                                     System.out.println(msgToClients);
                                     for (Client c : clients) {
