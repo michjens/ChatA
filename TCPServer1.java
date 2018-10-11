@@ -36,7 +36,7 @@ public class TCPServer1 {
                 input.read(dataUn);
                 String joinMsg = new String(dataUn);
                 joinMsg = joinMsg.trim();
-                System.out.println(joinMsg.substring(4));
+                System.out.println(joinMsg.substring(5) + "\n");
 
                 if (joinMsg.contains("JOIN")) {
 
@@ -44,26 +44,48 @@ public class TCPServer1 {
                     String username = joinMsg.substring(5, indexOfComma);
                     Client client = new Client();
 
-
-                    // Hvis username er lig med et allerede eksisterende username
-                    // slet bruger
-                    for (Client c : clients) {
-                        if (c.getUsername().equalsIgnoreCase(username)) {
-                            String errorMessage = "JR_ER\n";
-                            sendToClient(output, errorMessage);
-                        } else {
-                            sendToClient(output, "JR_OK\n");
-                        }
-                    }
-
-                    //validateUsername(username, socket);
-
                     client.setIp(socket.getInetAddress().getHostAddress());
-                    client.setUsername(username);
                     client.setSocket(socket);
                     client.setInput(socket.getInputStream());
                     client.setOutput(socket.getOutputStream());
                     clients.add(client);
+
+
+                    // Hvis username er lig med et allerede eksisterende username
+                    // slet bruger
+                    for (Client c : clients) {
+                        if (username.equalsIgnoreCase(c.getUsername())) {
+                            String errorMessage = "JR_ER\nDuplicate username. Terminating connection.\n";
+                            sendToClient(output, errorMessage);
+                            if(clients != null) {
+                                clients.remove(client.getUsername().equalsIgnoreCase(username));
+                                c.getSocket().close();
+
+                            }
+
+
+                        }else{
+                            sendToClient(output, "JR_OK\n");
+                            break;
+                        }
+
+                    }
+
+
+
+
+                    //
+
+
+                    client.setUsername(username);
+
+
+
+                    validateUsername(client.getUsername(), socket, client);
+
+
+
+
                     String allClientsString = "All connected clients: ";
                     for (Client c : clients) {
                         allClientsString += c.getUsername() + ", ";
@@ -84,7 +106,7 @@ public class TCPServer1 {
                                 msgIn = msgIn.trim();
 
 
-                                if (msgIn.equalsIgnoreCase("QUIT")) {
+                                if (msgIn.toLowerCase().contains("quit")) {
                                     sendToClient(output, "JR_Quit. Terminating connection");
                                     client.getSocket().close();
                                     clients.remove(client);
@@ -130,7 +152,7 @@ public class TCPServer1 {
         }
     }
 
-    public static boolean validateUsername(String username, Socket socket) {
+    public static boolean validateUsername(String username, Socket socket, Client client) {
         String check = "^[a-zA-Z0-9\\-_]{1,12}$";
 
         if (!username.matches(check)) {
@@ -140,7 +162,8 @@ public class TCPServer1 {
                 System.out.println("1");
                 sendToClient(output, "JR_ER 500: Invalid Username. Connection terminated.");
                 System.out.println("JR_ER 500: Invalid Username: " + username + ". Connection terminated.");
-                socket.close();
+                client.getSocket().close();
+
             } catch (IOException e) {
                 e.printStackTrace();
             }

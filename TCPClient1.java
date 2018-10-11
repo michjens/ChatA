@@ -59,12 +59,42 @@ public class TCPClient1 {
                 output.write(dataToSend);
                 if (!username.matches("^[a-zA-Z0-9\\-_]{1,12}$")) {
                     System.out.println("JR_ER 500: Invalid Username. Connection terminated.");
-                    socket.close();
-                } else {
+                 //   socket.close();
                     System.out.println("Connected");
+                } else {
+
                 }
 
                 if (socket.isConnected()) {
+                    receiver = new Thread(() -> {
+                        try {
+                            while (true) {
+                                byte[] dataIn = new byte[1024];
+
+                                input.read(dataIn);
+
+                                String msgIn = new String(dataIn);
+                                msgIn = msgIn.trim();
+                                System.out.println(msgIn);
+                                if (msgIn.contains("JR_Quit")) {
+                                    socket.close();
+                                    IMAV.stop();
+                                }else if(msgIn.contains("JR_ER")){
+                                    socket.close();
+                                    IMAV.stop();
+                                }
+
+
+
+                            }
+
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+
+                    });
+                    receiver.start();
+
                     sender = new Thread(() -> {
                         while (true) {
                             do {
@@ -84,28 +114,7 @@ public class TCPClient1 {
                     sender.start();
 
 
-                    receiver = new Thread(() -> {
-                        try {
-                            while (true) {
-                                byte[] dataIn = new byte[1024];
 
-                                input.read(dataIn);
-
-                                String msgIn = new String(dataIn);
-                                msgIn = msgIn.trim();
-                                System.out.println(msgIn);
-                                if (msgIn.contains("JR_Quit")) {
-                                    socket.close();
-                                    IMAV.stop();
-                                }
-                            }
-
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-
-                    });
-                    receiver.start();
 
                 } else {
                     System.out.println("Username is malformed:\n Please enter new username with with letters, digits, underscore or hyphen.\n Must not be longer than 12 characters.");
