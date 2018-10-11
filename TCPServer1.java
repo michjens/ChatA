@@ -41,7 +41,7 @@ public class TCPServer1 {
                 if (joinMsg.contains("JOIN")) {
 
                     int indexOfComma = joinMsg.lastIndexOf(",");
-                    String username = joinMsg.substring(4, indexOfComma);
+                    String username = joinMsg.substring(5, indexOfComma);
                     Client client = new Client();
 
 
@@ -56,7 +56,7 @@ public class TCPServer1 {
                         }
                     }
 
-                    validateUsername(username, socket);
+                    //validateUsername(username, socket);
 
                     client.setIp(socket.getInetAddress().getHostAddress());
                     client.setUsername(username);
@@ -97,7 +97,7 @@ public class TCPServer1 {
                                     String JR_ER_toolong = "JR_ER Message too long" + msgIn.trim().length();
                                     sendToClient(output, JR_ER_toolong);
                                 } else {
-                                    String msgToClients = client.getUsername() + ": " + msgIn;
+                                    String msgToClients = msgIn;
                                     System.out.println(msgToClients);
                                     for (Client c : clients) {
                                         sendToClient(c.getOutput(), msgToClients);

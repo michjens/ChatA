@@ -54,7 +54,7 @@ public class TCPClient1 {
             try {
 
 
-                String joinMsg = "JOIN" + username + ", " + IP_SERVER_STR + ":" + portToConnect;
+                String joinMsg = "JOIN " + username + ", " + IP_SERVER_STR + ":" + portToConnect;
                 byte[] dataToSend = joinMsg.getBytes();
                 output.write(dataToSend);
                 if (!username.matches("^[a-zA-Z0-9\\-_]{1,12}$")) {
@@ -69,7 +69,7 @@ public class TCPClient1 {
                         while (true) {
                             do {
                                 Scanner send = new Scanner(System.in);
-                                String msgToSend = send.nextLine();
+                                String msgToSend = "DATA " + username + ": " + send.nextLine();
                                 msgToSend = msgToSend.trim();
                                 if (msgToSend.trim().length() < 250) {
                                     sendToServer(output, msgToSend);
